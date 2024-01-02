@@ -1,5 +1,10 @@
 import styled from "styled-components";
 import {mobile} from "../responsive.js";
+import { useState } from "react";
+import { login } from "../Redux/apiCall.js";
+import { useDispatch, useSelector } from "react-redux";
+import { loginFailure, loginStart, loginSuccess } from "../Redux/userSlice.js";
+import axios from "axios";
 
 const Container = styled.div`
   width: 100vw;
@@ -48,6 +53,11 @@ const Button = styled.button`
   color: white;
   cursor: pointer;
   margin-bottom: 10px;
+
+  &:disabled{
+    color:green;  
+    cursor:not-allowed;
+  }
 `;
 
 const Link = styled.a`
@@ -57,15 +67,44 @@ const Link = styled.a`
   cursor: pointer;
 `;
 
+const Error = styled.span`
+ color:red
+`
+
 const Login = () => {
+  const [username,setusername] = useState("")
+  const [password,setPassword] = useState("")
+  const dispatch = useDispatch()
+  const {isfetching , error} = useSelector((state)=> state.user)
+
+  const handlCLick = async (e)=>{
+    e.preventDefault();
+    dispatch(loginStart())
+    try {
+      const res = await axios.post("http://localhost:5000/auth/login", { username, password })
+      dispatch(loginSuccess(res.data))
+     console.log("helooo", res.data)
+    } catch (error) {
+      console.log(error);
+      dispatch(loginFailure())
+      console.log(error);
+    }
+  }
+
   return (
     <Container>
       <Wrapper>
         <Title>SIGN IN</Title>
         <Form>
-          <Input placeholder="username" />
-          <Input placeholder="password" />
-          <Button>LOGIN</Button>
+          <Input placeholder="name" 
+          onChange={(e)=>setusername(e.target.value)}
+          />
+          <Input placeholder="password" 
+          type="password"
+          onChange={(e)=>setPassword(e.target.value)}
+          />
+          <Button onClick={handlCLick} disabled={isfetching}>LOGIN</Button>
+          {error && <Error>Something went Wrong</Error>}
           <Link>DO NOT YOU REMEMBER THE PASSWORD?</Link>
           <Link>CREATE A NEW ACCOUNT</Link>
         </Form>

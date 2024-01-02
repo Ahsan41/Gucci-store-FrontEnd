@@ -1,9 +1,14 @@
-import { Add, Remove } from "@mui/icons-material";
+import { Add, Key, Remove } from "@mui/icons-material";
 import styled from "styled-components";
 import Announcement from "../components/Announcement";
 import Footer from "../components/Foooter";
 import Navbar from "../components/Navbar";
 import { mobile } from "../responsive";
+import { useSelector } from "react-redux";
+import StripeCheckout from "react-stripe-checkout";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Container = styled.div``;
 
@@ -154,6 +159,39 @@ const Button = styled.button`
 `;
 
 const Cart = () => {
+  const product = useSelector((state)=> state.cart)
+  console.log(product , "reeeeedux");
+  const [stripeToken, setStripeToken] = useState(null)
+  const key =   "pk_test_51OCIhnDdAzrFS6fmOAwiWyapL8Qgj9KjqzoCG9Jhh9G5Ev2nUdz428QG96nxlVmjEWHT2LXrh0SRNJUaJdFXayds006yml4bcK"
+  const onToken = (token)=>{
+    setStripeToken(token)
+    console.log(token);
+  }  
+  const navigate = useNavigate()
+
+  
+    useEffect(() => {
+    const makeRequest = async () => {
+      try {
+        const res = await axios.post("http://localhost:5000/checkout/payment", {
+          tokenId: stripeToken.id,
+          amount: product.total * 100,
+        });   
+        console.log(res.data);
+      navigate("/sucess", {
+        stripeData:res.data ,
+        products:Product 
+      }
+      ) 
+      } catch (err){
+        console.log(err);
+      }
+    };
+    stripeToken && makeRequest();
+  }, [stripeToken, product.total , navigate]);
+
+  console.log(product.product);
+
   return (
     <Container>
       <Navbar />
@@ -170,63 +208,41 @@ const Cart = () => {
         </Top>
         <Bottom>
           <Info>
-            <Product>
+         <Hr />
+         {product.product.map(product=>(
+            
+           <Product>
               <ProductDetail>
-                <Image src="https://hips.hearstapps.com/vader-prod.s3.amazonaws.com/1614188818-TD1MTHU_SHOE_ANGLE_GLOBAL_MENS_TREE_DASHERS_THUNDER_b01b1013-cd8d-48e7-bed9-52db26515dc4.png?crop=1xw:1.00xh;center,top&resize=480%3A%2A" />
+                <Image src={product.img} />
                 <Details>
                   <ProductName>
-                    <b>Product:</b> JESSIE THUNDER SHOES
+                    <b>Product:</b> {product.tittle}
                   </ProductName>
                   <ProductId>
-                    <b>ID:</b> 93813718293
+                    <b>ID:</b> {product._id}
                   </ProductId>
-                  <ProductColor color="black" />
+                  <ProductColor color={product.color} />
                   <ProductSize>
-                    <b>Size:</b> 37.5
+                    <b>Size:</b> {product.size}
                   </ProductSize>
                 </Details>
               </ProductDetail>
               <PriceDetail>
                 <ProductAmountContainer>
                   <Add />
-                  <ProductAmount>2</ProductAmount>
+                  <ProductAmount>{product.quantity}</ProductAmount>
                   <Remove />
                 </ProductAmountContainer>
-                <ProductPrice>$ 30</ProductPrice>
+                <ProductPrice>$ {product.price * product.quantity}</ProductPrice>
               </PriceDetail>
             </Product>
-            <Hr />
-            <Product>
-              <ProductDetail>
-                <Image src="https://i.pinimg.com/originals/2d/af/f8/2daff8e0823e51dd752704a47d5b795c.png" />
-                <Details>
-                  <ProductName>
-                    <b>Product:</b> HAKURA T-SHIRT
-                  </ProductName>
-                  <ProductId>
-                    <b>ID:</b> 93813718293
-                  </ProductId>
-                  <ProductColor color="gray" />
-                  <ProductSize>
-                    <b>Size:</b> M
-                  </ProductSize>
-                </Details>
-              </ProductDetail>
-              <PriceDetail>
-                <ProductAmountContainer>
-                  <Add />
-                  <ProductAmount>1</ProductAmount>
-                  <Remove />
-                </ProductAmountContainer>
-                <ProductPrice>$ 20</ProductPrice>
-              </PriceDetail>
-            </Product>
+              ))}
           </Info>
           <Summary>
             <SummaryTitle>ORDER SUMMARY</SummaryTitle>
             <SummaryItem>
               <SummaryItemText>Subtotal</SummaryItemText>
-              <SummaryItemPrice>$ 80</SummaryItemPrice>
+              <SummaryItemPrice>$ {product.total}</SummaryItemPrice>
             </SummaryItem>
             <SummaryItem>
               <SummaryItemText>Estimated Shipping</SummaryItemText>
@@ -238,9 +254,20 @@ const Cart = () => {
             </SummaryItem>
             <SummaryItem type="total">
               <SummaryItemText>Total</SummaryItemText>
-              <SummaryItemPrice>$ 80</SummaryItemPrice>
+              <SummaryItemPrice>$ {product.total}</SummaryItemPrice>
             </SummaryItem>
-            <Button>CHECKOUT NOW</Button>
+            <StripeCheckout
+              name="Lama Shop"
+              image="https://avatars.githubusercontent.com/u/1486366?v=4"
+              billingAddress
+              shippingAddress
+              description={`Your total is $${product.total}`}
+              amount={product.total * 100}
+              token={onToken}
+              stripeKey={key}
+            >
+               <Button >CHECKOUT NOW</Button>
+            </StripeCheckout>
           </Summary>
         </Bottom>
       </Wrapper>
